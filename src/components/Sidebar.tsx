@@ -28,7 +28,7 @@ export function Sidebar({ items, header, footer }: SidebarProps) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 flex-col border-r border-border p-4 md:flex">
+      <aside className="sticky top-16 hidden h-[calc(100vh-4rem)] w-60 shrink-0 flex-col border-r border-chrome-border bg-chrome-bg p-4 md:flex">
         {header}
         <nav className="mt-2 flex flex-1 flex-col gap-1">
           {items.map((item) => {
@@ -41,7 +41,7 @@ export function Sidebar({ items, header, footer }: SidebarProps) {
                   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                   active
                     ? "bg-brand/10 text-brand"
-                    : "text-fg-muted hover:bg-surface-hover hover:text-fg"
+                    : "text-chrome-fg-muted hover:bg-chrome-surface-hover hover:text-chrome-fg"
                 )}
               >
                 <item.icon className="size-[18px]" strokeWidth={1.75} />
@@ -54,7 +54,7 @@ export function Sidebar({ items, header, footer }: SidebarProps) {
       </aside>
 
       {/* Mobile top tab bar */}
-      <nav className="sticky top-16 z-30 flex gap-1 overflow-x-auto border-b border-border bg-bg/90 px-3 py-2 backdrop-blur-lg md:hidden">
+      <nav className="sticky top-16 z-30 flex gap-1 overflow-x-auto border-b border-chrome-border bg-chrome-bg/95 px-3 py-2 backdrop-blur-lg md:hidden">
         {items.map((item) => {
           const active = isActive(item.href);
           return (
@@ -65,7 +65,7 @@ export function Sidebar({ items, header, footer }: SidebarProps) {
                 "flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                 active
                   ? "bg-brand/10 text-brand"
-                  : "text-fg-muted hover:bg-surface-hover"
+                  : "text-chrome-fg-muted hover:bg-chrome-surface-hover"
               )}
             >
               <item.icon className="size-3.5" strokeWidth={1.75} />

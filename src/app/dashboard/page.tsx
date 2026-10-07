@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Clock, MessageSquareText } from "lucide-react";
+import { ArrowRight, Clock, MessageSquareText, Sparkles } from "lucide-react";
 import { QuestionCard } from "@/components/QuestionCard";
 import { ExpertCard } from "@/components/ExpertCard";
 import { CategoryCard } from "@/components/CategoryCard";
+import { PollCard } from "@/components/PollCard";
+import { VisitorAskWidget } from "@/components/VisitorAskWidget";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { buttonVariants } from "@/components/ui/Button";
 import { useAppStore } from "@/lib/store";
@@ -16,6 +18,7 @@ export default function UserDashboardPage() {
   const questions = useAppStore((s) => s.questions);
   const experts = useAppStore((s) => s.experts);
   const users = useAppStore((s) => s.users);
+  const polls = useAppStore((s) => s.polls);
 
   const user = session ? users.find((u) => u.id === session.id) : null;
   const myQuestions = questions.filter((q) => q.askerId === session?.id);
@@ -28,6 +31,19 @@ export default function UserDashboardPage() {
     .slice(0, 3);
 
   const interestSlugs = user?.interests ?? [];
+
+  const trendingQuestions = questions
+    .filter(
+      (q) =>
+        q.status === "answered" &&
+        q.privacy === "public" &&
+        q.askerId !== session?.id &&
+        interestSlugs.includes(q.categorySlug)
+    )
+    .sort((a, b) => b.likes - a.likes)
+    .slice(0, 2);
+  const trendingPoll = polls.find((p) => interestSlugs.includes(p.categorySlug));
+
   const recommended = experts
     .filter((e) => e.categorySlugs.some((c) => interestSlugs.includes(c)))
     .sort((a, b) => b.rating - a.rating)
@@ -42,10 +58,14 @@ export default function UserDashboardPage() {
         Welcome back, {user?.name.split(" ")[0] ?? "there"}
       </h1>
       <p className="mt-1 text-sm text-fg-muted">
-        Here&apos;s what&apos;s happening with your questions.
+        Here&apos;s what&apos;s happening in your interests.
       </p>
 
-      <section className="mt-8">
+      <div className="mt-6">
+        <VisitorAskWidget />
+      </div>
+
+      <section className="mt-10">
         <div className="flex items-center justify-between">
           <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-fg">
             <Clock className="size-4 text-brand" /> Active questions
@@ -96,10 +116,24 @@ export default function UserDashboardPage() {
         </div>
       </section>
 
+      {(trendingQuestions.length > 0 || trendingPoll) && (
+        <section className="mt-10">
+          <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-fg">
+            <Sparkles className="size-4 text-brand" /> Trending in your interests
+          </h2>
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {trendingPoll && <PollCard poll={trendingPoll} />}
+            {trendingQuestions.map((q) => (
+              <QuestionCard key={q.id} question={q} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {recommended.length > 0 && (
         <section className="mt-10">
           <h2 className="font-display text-lg font-semibold text-fg">
-            Recommended experts
+            Experts to follow
           </h2>
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {recommended.map((e) => (

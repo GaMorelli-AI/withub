@@ -1,5 +1,3 @@
-export type Currency = number;
-
 export interface Category {
   id: string;
   slug: string;
@@ -9,7 +7,11 @@ export interface Category {
   topics: string[];
 }
 
+// "Domain" is the conceptual name used in the schema/brief; a Category *is* a Domain.
+export type Domain = Category;
+
 export type Language = string;
+export type ModerationStatus = "published" | "pending" | "flagged" | "removed";
 
 export interface Expert {
   id: string;
@@ -23,17 +25,22 @@ export interface Expert {
   experience: string;
   categorySlugs: string[];
   tags: string[];
-  pricePerQuestion: Currency;
   rating: number;
   answersCount: number;
   followersCount: number;
   responseRate: number; // percentage 0-100
   verification: "verified" | "pending";
+  linkedinUrl?: string;
+  website?: string;
+  otherSocialLabel?: string;
+  otherSocialUrl?: string;
   joinedAt: string; // ISO date
   gradientSeed: number; // 0-5, used to pick avatar gradient
 }
 
 export type QuestionPrivacy = "public" | "private";
+export type QuestionTarget = "general" | "expert";
+export type AnswerVisibility = "named" | "anonymous";
 export type QuestionStatus =
   | "waiting"
   | "answered"
@@ -44,12 +51,17 @@ export type QuestionStatus =
 export interface QuestionAnswer {
   text: string;
   createdAt: string; // ISO date
+  authorExpertId: string;
+  visibility: AnswerVisibility;
+  sourceKnowledgeIds: string[];
+  generation: "expert" | "assisted"; // manually written vs generated-from-knowledge
 }
 
 export interface Question {
   id: string;
-  askerId: string;
-  expertId: string;
+  askerId: string | null; // null = anonymous visitor session
+  target: QuestionTarget;
+  expertId?: string; // set when target === "expert"
   categorySlug: string;
   topic?: string;
   text: string;
@@ -57,22 +69,46 @@ export interface Question {
   attachments?: string[];
   privacy: QuestionPrivacy;
   status: QuestionStatus;
-  price: Currency;
-  platformFee: Currency;
-  expertEarnings: Currency;
+  clusterOf?: string; // id of the representative question this duplicates
   likes: number;
   createdAt: string; // ISO date
   expiresAt: string; // ISO date
   answer?: QuestionAnswer;
 }
 
-export interface Review {
+export type KnowledgeSourceType = "text" | "url" | "file" | "pdf";
+export type KnowledgeAccess = "free" | "subscribers";
+
+export interface KnowledgeItem {
   id: string;
   expertId: string;
-  userId: string;
-  questionId?: string;
-  rating: number; // 1-5
-  text: string;
+  title: string;
+  body: string;
+  sourceType: KnowledgeSourceType;
+  sourceUrl?: string;
+  categorySlug: string;
+  topics: string[];
+  access: KnowledgeAccess;
+  status: ModerationStatus;
+  views: number;
+  createdAt: string;
+}
+
+export interface PollOption {
+  id: string;
+  label: string;
+  expertVotes: number;
+  communityVotes: number;
+}
+
+export type PollTrend = "up" | "down" | "flat";
+
+export interface Poll {
+  id: string;
+  categorySlug: string;
+  question: string;
+  options: PollOption[];
+  trend: PollTrend;
   createdAt: string;
 }
 
@@ -81,15 +117,20 @@ export interface AppUser {
   name: string;
   email: string;
   country: string;
+  language: Language;
   interests: string[]; // category slugs
-  savedExpertIds: string[];
+  followingExpertIds: string[];
+  subscriptionTier: "free" | "premium";
+  privateProfile: boolean;
   joinedAt: string;
   gradientSeed: number;
 }
 
 export type NotificationType =
   | "answer"
+  | "cluster_answer"
   | "follower"
+  | "poll_result"
   | "reminder"
   | "system";
 
@@ -101,15 +142,4 @@ export interface AppNotification {
   text: string;
   read: boolean;
   createdAt: string;
-}
-
-export interface EarningsTransaction {
-  id: string;
-  expertId: string;
-  questionId: string;
-  userName: string;
-  questionText: string;
-  amount: Currency;
-  status: "paid" | "pending";
-  date: string; // ISO date
 }

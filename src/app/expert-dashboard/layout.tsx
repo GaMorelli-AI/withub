@@ -1,14 +1,27 @@
 "use client";
 
-import { Home, Inbox, MessageSquareText, Settings, User, Wallet } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  Home,
+  Inbox,
+  MessageSquareText,
+  Settings,
+  User,
+  Users,
+  Vote,
+} from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { Sidebar } from "@/components/Sidebar";
 
 const ITEMS = [
   { href: "/expert-dashboard", label: "Overview", icon: Home },
   { href: "/expert-dashboard/questions", label: "Questions", icon: Inbox },
+  { href: "/expert-dashboard/knowledge", label: "Knowledge", icon: BookOpen },
   { href: "/expert-dashboard/answers", label: "Answers", icon: MessageSquareText },
-  { href: "/expert-dashboard/earnings", label: "Earnings", icon: Wallet },
+  { href: "/expert-dashboard/polls", label: "Polls", icon: Vote },
+  { href: "/expert-dashboard/followers", label: "Followers", icon: Users },
+  { href: "/expert-dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/expert-dashboard/profile", label: "Profile", icon: User },
   { href: "/expert-dashboard/settings", label: "Settings", icon: Settings },
 ];

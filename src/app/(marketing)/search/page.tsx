@@ -2,6 +2,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { ExpertCard } from "@/components/ExpertCard";
 import { CategoryCard } from "@/components/CategoryCard";
 import { QuestionCard } from "@/components/QuestionCard";
+import { KnowledgeCard } from "@/components/KnowledgeCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { search, hasResults } from "@/lib/search";
 import { SearchX } from "lucide-react";
@@ -69,6 +70,19 @@ export default async function SearchPage({
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {results.categories.map((c) => (
               <CategoryCard key={c.id} category={c} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {results.knowledge.length > 0 && (
+        <section className="mt-10 mb-4">
+          <h2 className="font-display text-lg font-semibold text-fg">
+            Knowledge
+          </h2>
+          <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
+            {results.knowledge.map((k) => (
+              <KnowledgeCard key={k.id} item={k} />
             ))}
           </div>
         </section>

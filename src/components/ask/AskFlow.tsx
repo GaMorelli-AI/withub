@@ -14,6 +14,7 @@ import {
   Paperclip,
   Search,
   Sparkles,
+  Users2,
   X,
 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
@@ -22,14 +23,21 @@ import { Input } from "@/components/ui/Input";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { StepIndicator } from "@/components/ui/StepIndicator";
 import { Avatar } from "@/components/ui/Avatar";
-import { PriceBadge } from "@/components/PriceBadge";
-import { useAppStore, splitPrice } from "@/lib/store";
+import { useAppStore } from "@/lib/store";
 import { useToast } from "@/components/ui/Toast";
-import { formatPrice } from "@/lib/format";
+import { inferCategorySlug } from "@/lib/semantic";
+import { categories } from "@/data/categories";
 import { cn } from "@/lib/cn";
+import type { AskQuestionResult } from "@/lib/store";
+import type { QuestionPrivacy, QuestionTarget } from "@/lib/types";
 
-const STEPS = ["Question", "Details", "Privacy", "Expert", "Payment"];
-const PRIVATE_MARKUP = 1.5;
+const STEP_LABELS: Record<string, string> = {
+  question: "Question",
+  details: "Details",
+  audience: "Audience",
+  expert: "Expert",
+  review: "Review",
+};
 
 export function AskFlow() {
   const toast = useToast();
@@ -48,17 +56,25 @@ export function AskFlow() {
   const [text, setText] = useState("");
   const [details, setDetails] = useState("");
   const [attachments, setAttachments] = useState<string[]>([]);
-  const [privacy, setPrivacy] = useState<"public" | "private">("public");
+  const [target, setTarget] = useState<QuestionTarget>(initialExpertId ? "expert" : "general");
+  const [privacy, setPrivacy] = useState<QuestionPrivacy>("public");
   const [expertId, setExpertId] = useState<string | null>(initialExpertId);
   const [expertQuery, setExpertQuery] = useState("");
-  const [submittedId, setSubmittedId] = useState<string | null>(null);
+  const [result, setResult] = useState<AskQuestionResult | null>(null);
 
   const selectedExpert = expertId ? experts.find((e) => e.id === expertId) : undefined;
-  const category = initialCategory ?? selectedExpert?.categorySlugs[0] ?? "business";
+  const categorySlug = useMemo(
+    () =>
+      initialCategory ??
+      selectedExpert?.categorySlugs[0] ??
+      inferCategorySlug(text, categories),
+    [initialCategory, selectedExpert, text]
+  );
 
-  const basePrice = selectedExpert?.pricePerQuestion ?? 20;
-  const price = privacy === "private" ? Math.round(basePrice * PRIVATE_MARKUP) : basePrice;
-  const { platformFee, expertEarnings } = splitPrice(price);
+  const steps = useMemo(
+    () => (target === "expert" ? ["question", "details", "audience", "expert", "review"] : ["question", "details", "audience", "review"]),
+    [target]
+  );
 
   const filteredExperts = useMemo(() => {
     const q = expertQuery.trim().toLowerCase();
@@ -77,16 +93,16 @@ export function AskFlow() {
     return list.slice(0, 8);
   }, [expertQuery, initialCategory, experts]);
 
-  const canContinue = [
-    text.trim().length >= 10,
-    true,
-    true,
-    Boolean(expertId),
-    true,
-  ][step];
+  const stepKey = steps[step];
+  const canContinue =
+    stepKey === "question"
+      ? text.trim().length >= 10
+      : stepKey === "expert"
+      ? Boolean(expertId)
+      : true;
 
   function next() {
-    if (step < STEPS.length - 1) setStep((s) => s + 1);
+    if (step < steps.length - 1) setStep((s) => s + 1);
   }
   function back() {
     if (step > 0) setStep((s) => s - 1);
@@ -107,34 +123,91 @@ export function AskFlow() {
       toast("Signed in as Lucas Estevam (demo User) to send your question.");
     }
     const askerId = session?.id ?? "usr-lucas-estevam";
-    if (!expertId) return;
+    if (target === "expert" && !expertId) return;
 
-    const id = askQuestion({
+    const res = askQuestion({
       askerId,
-      expertId,
-      categorySlug: category,
+      target,
+      expertId: target === "expert" ? expertId ?? undefined : undefined,
+      categorySlug,
       text: text.trim(),
       details: details.trim() || undefined,
-      privacy,
-      price,
+      attachments,
+      privacy: target === "expert" ? privacy : "public",
     });
-    setSubmittedId(id);
-    toast(`Your question was sent to ${selectedExpert?.name ?? "the expert"}.`);
+    setResult(res);
+
+    if (target === "expert") {
+      toast(`Your question was sent to ${selectedExpert?.name ?? "the expert"}.`);
+    } else if (res.instantAnswer) {
+      toast("WitHub found an answer from existing knowledge.");
+    } else {
+      toast("Your question was sent to WitHub.");
+    }
   }
 
-  if (submittedId) {
+  if (result) {
     return (
       <div className="mx-auto flex max-w-lg flex-1 flex-col items-center justify-center px-4 py-16 text-center sm:px-6">
         <span className="flex size-16 items-center justify-center rounded-full bg-brand/10 text-brand">
           <Check className="size-8" />
         </span>
-        <h1 className="mt-5 font-display text-2xl font-semibold text-fg">
-          Question sent!
-        </h1>
-        <p className="mt-2 text-sm text-fg-muted">
-          Your question was sent to <strong className="text-fg">{selectedExpert?.name}</strong>.
-          You&apos;ll be notified as soon as it&apos;s answered.
-        </p>
+
+        {target === "expert" ? (
+          <>
+            <h1 className="mt-5 font-display text-2xl font-semibold text-fg">
+              Question sent!
+            </h1>
+            <p className="mt-2 text-sm text-fg-muted">
+              Your question was sent to <strong className="text-fg">{selectedExpert?.name}</strong>.
+              You&apos;ll be notified as soon as it&apos;s answered.
+            </p>
+          </>
+        ) : result.instantAnswer ? (
+          <>
+            <h1 className="mt-5 font-display text-2xl font-semibold text-fg">
+              Here&apos;s what WitHub knows
+            </h1>
+            <Card className="mt-5 w-full p-5 text-left">
+              <p className="text-sm leading-relaxed text-fg-muted">
+                {result.instantAnswer.text}
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-border pt-3 text-xs text-fg-subtle">
+                <Sparkles className="size-3.5 text-brand" /> Based on knowledge from{" "}
+                {result.instantAnswer.expertIds
+                  .map((id) => experts.find((e) => e.id === id)?.name)
+                  .filter(Boolean)
+                  .join(", ")}
+              </div>
+            </Card>
+            {result.similarCount > 1 && (
+              <p className="mt-3 flex items-center gap-1.5 text-xs text-fg-muted">
+                <Users2 className="size-3.5" /> {result.similarCount} people asked something similar
+              </p>
+            )}
+          </>
+        ) : result.joinedCluster ? (
+          <>
+            <h1 className="mt-5 font-display text-2xl font-semibold text-fg">
+              You&apos;re not alone
+            </h1>
+            <p className="mt-2 text-sm text-fg-muted">
+              {result.similarCount} people asked something similar. We&apos;ll notify everyone
+              as soon as an Expert answers.
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="mt-5 font-display text-2xl font-semibold text-fg">
+              Sent to WitHub
+            </h1>
+            <p className="mt-2 text-sm text-fg-muted">
+              This question is waiting for an Expert in this domain. We&apos;ll notify you
+              the moment it&apos;s answered.
+            </p>
+          </>
+        )}
+
         <div className="mt-8 flex flex-col gap-2.5 sm:flex-row">
           <Link href="/dashboard/questions" className={buttonVariants("primary", "md")}>
             View my questions
@@ -151,13 +224,13 @@ export function AskFlow() {
     <div className="mx-auto max-w-2xl flex-1 px-4 py-12 sm:px-6">
       <h1 className="font-display text-2xl font-semibold text-fg">Ask a question</h1>
       <p className="mt-1 text-sm text-fg-muted">
-        Straight to someone who actually knows.
+        Straight to someone who actually knows — or to everyone at once.
       </p>
 
-      <StepIndicator steps={STEPS} current={step} className="mt-6" />
+      <StepIndicator steps={steps.map((k) => STEP_LABELS[k])} current={step} className="mt-6" />
 
       <Card className="mt-6 p-6 sm:p-7">
-        {step === 0 && (
+        {stepKey === "question" && (
           <div>
             <label className="mb-2 block text-sm font-medium text-fg">
               What would you like to ask?
@@ -177,7 +250,7 @@ export function AskFlow() {
           </div>
         )}
 
-        {step === 1 && (
+        {stepKey === "details" && (
           <div>
             <label className="mb-2 block text-sm font-medium text-fg">
               Add context (optional)
@@ -186,7 +259,7 @@ export function AskFlow() {
               rows={5}
               value={details}
               onChange={(e) => setDetails(e.target.value)}
-              placeholder="Anything that helps the expert understand your situation better."
+              placeholder="Anything that helps answer this well."
             />
             <div className="mt-4 flex flex-wrap gap-2.5">
               <AttachButton icon={ImageIcon} label="Attach image" onClick={() => handleAttach("image")} />
@@ -216,31 +289,55 @@ export function AskFlow() {
           </div>
         )}
 
-        {step === 2 && (
-          <div>
-            <label className="mb-3 block text-sm font-medium text-fg">
-              Who can see this question?
-            </label>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <PrivacyOption
-                icon={Globe}
-                title="Public"
-                description="Your question and its answer may appear on WitHub for others to learn from."
-                active={privacy === "public"}
-                onClick={() => setPrivacy("public")}
-              />
-              <PrivacyOption
-                icon={Lock}
-                title="Private"
-                description="Only you and the expert can see this. Private questions cost more."
-                active={privacy === "private"}
-                onClick={() => setPrivacy("private")}
-              />
+        {stepKey === "audience" && (
+          <div className="flex flex-col gap-6">
+            <div>
+              <label className="mb-3 block text-sm font-medium text-fg">Ask</label>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <AudienceOption
+                  icon={Users2}
+                  title="Everyone"
+                  description="WitHub finds an answer from existing knowledge, or routes it to Experts in this domain."
+                  active={target === "general"}
+                  onClick={() => setTarget("general")}
+                />
+                <AudienceOption
+                  icon={Search}
+                  title="A specific Expert"
+                  description="Pick someone by name and ask them directly."
+                  active={target === "expert"}
+                  onClick={() => setTarget("expert")}
+                />
+              </div>
             </div>
+
+            {target === "expert" && (
+              <div>
+                <label className="mb-3 block text-sm font-medium text-fg">
+                  Who can see this?
+                </label>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <AudienceOption
+                    icon={Globe}
+                    title="Public"
+                    description="Your question and its answer may appear on WitHub."
+                    active={privacy === "public"}
+                    onClick={() => setPrivacy("public")}
+                  />
+                  <AudienceOption
+                    icon={Lock}
+                    title="Private"
+                    description="Only you and the expert can see this."
+                    active={privacy === "private"}
+                    onClick={() => setPrivacy("private")}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {step === 3 && (
+        {stepKey === "expert" && (
           <div>
             {selectedExpert ? (
               <div>
@@ -253,7 +350,6 @@ export function AskFlow() {
                     <p className="truncate text-sm font-medium text-fg">{selectedExpert.name}</p>
                     <p className="truncate text-xs text-fg-subtle">{selectedExpert.headline}</p>
                   </div>
-                  <PriceBadge price={selectedExpert.pricePerQuestion} label="" />
                 </div>
                 <button
                   onClick={() => setExpertId(null)}
@@ -288,7 +384,6 @@ export function AskFlow() {
                         <p className="truncate text-sm font-medium text-fg">{e.name}</p>
                         <p className="truncate text-xs text-fg-subtle">{e.headline}</p>
                       </div>
-                      <PriceBadge price={e.pricePerQuestion} label="" />
                     </button>
                   ))}
                 </div>
@@ -297,23 +392,20 @@ export function AskFlow() {
           </div>
         )}
 
-        {step === 4 && (
+        {stepKey === "review" && (
           <div>
             <label className="mb-3 block text-sm font-medium text-fg">
               Review &amp; send
             </label>
             <div className="rounded-xl border border-border bg-bg-elevated p-4">
-              <Row label="Expert" value={selectedExpert?.name ?? "—"} />
-              <Row label="Question price" value={formatPrice(basePrice)} />
-              {privacy === "private" && (
-                <Row label="Private question fee" value={`+${formatPrice(price - basePrice)}`} />
+              <Row
+                label="Ask"
+                value={target === "expert" ? selectedExpert?.name ?? "—" : "Everyone"}
+              />
+              {target === "expert" && (
+                <Row label="Visibility" value={privacy === "public" ? "Public" : "Private"} />
               )}
-              <Row label="Platform fee" value={formatPrice(platformFee)} muted />
-              <div className="my-3 h-px bg-border" />
-              <Row label="Total" value={formatPrice(price)} bold />
-              <p className="mt-2 text-xs text-fg-subtle">
-                {selectedExpert?.name} receives {formatPrice(expertEarnings)}.
-              </p>
+              <Row label="Question" value={text.trim()} wrap />
             </div>
             {!session && (
               <p className="mt-3 flex items-center gap-1.5 text-xs text-fg-subtle">
@@ -327,7 +419,7 @@ export function AskFlow() {
           <Button variant="ghost" onClick={back} disabled={step === 0}>
             <ArrowLeft className="size-4" /> Back
           </Button>
-          {step < STEPS.length - 1 ? (
+          {step < steps.length - 1 ? (
             <Button onClick={next} disabled={!canContinue}>
               Continue <ArrowRight className="size-4" />
             </Button>
@@ -362,7 +454,7 @@ function AttachButton({
   );
 }
 
-function PrivacyOption({
+function AudienceOption({
   icon: Icon,
   title,
   description,
@@ -396,20 +488,16 @@ function PrivacyOption({
 function Row({
   label,
   value,
-  muted = false,
-  bold = false,
+  wrap = false,
 }: {
   label: string;
   value: string;
-  muted?: boolean;
-  bold?: boolean;
+  wrap?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between py-1 text-sm">
-      <span className={muted ? "text-fg-subtle" : "text-fg-muted"}>{label}</span>
-      <span className={cn(bold ? "font-display text-base font-semibold text-fg" : "text-fg")}>
-        {value}
-      </span>
+    <div className={cn("py-1 text-sm", wrap ? "flex flex-col gap-1" : "flex items-center justify-between")}>
+      <span className="text-fg-muted">{label}</span>
+      <span className={cn("text-fg", wrap && "text-sm leading-relaxed")}>{value}</span>
     </div>
   );
 }

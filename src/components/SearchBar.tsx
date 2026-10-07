@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import * as Icons from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { Search, MessageCircleQuestion, Users, Grid3x3 } from "lucide-react";
+import { Search, MessageCircleQuestion, Users, Grid3x3, BookOpen, Vote } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { search, hasResults } from "@/lib/search";
 import { cn } from "@/lib/cn";
@@ -148,6 +148,34 @@ export function SearchBar({ variant = "compact", className, autoFocus }: SearchB
                       </Link>
                     );
                   })}
+                </ResultGroup>
+              )}
+              {results.knowledge.length > 0 && (
+                <ResultGroup icon={BookOpen} label="Knowledge">
+                  {results.knowledge.map((k) => (
+                    <Link
+                      key={k.id}
+                      href={`/expert/${k.expertId}`}
+                      onClick={() => setOpen(false)}
+                      className="block truncate rounded-lg px-3 py-2 text-sm text-fg hover:bg-surface-hover"
+                    >
+                      {k.title}
+                    </Link>
+                  ))}
+                </ResultGroup>
+              )}
+              {results.polls.length > 0 && (
+                <ResultGroup icon={Vote} label="Polls">
+                  {results.polls.map((p) => (
+                    <Link
+                      key={p.id}
+                      href="/polls"
+                      onClick={() => setOpen(false)}
+                      className="block truncate rounded-lg px-3 py-2 text-sm text-fg hover:bg-surface-hover"
+                    >
+                      {p.question}
+                    </Link>
+                  ))}
                 </ResultGroup>
               )}
               <button

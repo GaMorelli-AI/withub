@@ -3,17 +3,19 @@
 import { use, useState } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Clock, Paperclip, Send } from "lucide-react";
+import { ArrowLeft, Clock, Globe, Paperclip, Send } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { Textarea } from "@/components/ui/Textarea";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { StatusBadge } from "@/components/StatusBadge";
 import { useAppStore } from "@/lib/store";
 import { useToast } from "@/components/ui/Toast";
 import { getCategoryBySlug } from "@/data/categories";
-import { formatDate, formatPrice, formatTimeRemaining } from "@/lib/format";
+import { getKnowledgeByExpert } from "@/data/knowledge";
+import { formatDate, formatTimeRemaining } from "@/lib/format";
 
 export default function AnswerQuestionPage({
   params,
@@ -22,21 +24,37 @@ export default function AnswerQuestionPage({
 }) {
   const { id } = use(params);
   const toast = useToast();
+  const session = useAppStore((s) => s.session);
   const questions = useAppStore((s) => s.questions);
   const users = useAppStore((s) => s.users);
   const answerQuestion = useAppStore((s) => s.answerQuestion);
 
   const question = questions.find((q) => q.id === id);
   const [answer, setAnswer] = useState("");
+  const [anonymous, setAnonymous] = useState(false);
+  const [sourceIds, setSourceIds] = useState<string[]>([]);
 
   if (!question) notFound();
 
-  const asker = users.find((u) => u.id === question.askerId);
+  const asker = question.askerId ? users.find((u) => u.id === question.askerId) : null;
   const category = getCategoryBySlug(question.categorySlug);
+  const myKnowledge = session?.type === "expert" ? getKnowledgeByExpert(session.id) : [];
+  const relevantKnowledge = myKnowledge.filter(
+    (k) => k.categorySlug === question.categorySlug
+  );
+
+  function toggleSource(kid: string) {
+    setSourceIds((prev) =>
+      prev.includes(kid) ? prev.filter((id) => id !== kid) : [...prev, kid]
+    );
+  }
 
   function handleSend() {
     if (!question || answer.trim().length < 10) return;
-    answerQuestion(question.id, answer.trim());
+    answerQuestion(question.id, answer.trim(), {
+      visibility: anonymous ? "anonymous" : "named",
+      sourceKnowledgeIds: sourceIds,
+    });
     toast("Answer successfully published.");
   }
 
@@ -53,6 +71,11 @@ export default function AnswerQuestionPage({
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge status={question.status} />
           <Badge variant="outline">{category?.name}</Badge>
+          {question.target === "general" && (
+            <Badge variant="outline">
+              <Globe className="size-3" /> Everyone
+            </Badge>
+          )}
           <span className="ml-auto text-xs text-fg-subtle">
             {formatDate(question.createdAt)}
           </span>
@@ -61,8 +84,7 @@ export default function AnswerQuestionPage({
         <div className="mt-4 flex items-center gap-3">
           <Avatar name={asker?.name ?? "Anonymous"} seed={asker?.gradientSeed} size="sm" />
           <div>
-            <p className="text-sm font-medium text-fg">{asker?.name ?? "Anonymous"}</p>
-            <p className="text-xs text-fg-subtle">{formatPrice(question.price)} question</p>
+            <p className="text-sm font-medium text-fg">{asker?.name ?? "Anonymous visitor"}</p>
           </div>
         </div>
 
@@ -109,10 +131,38 @@ export default function AnswerQuestionPage({
                 onChange={(e) => setAnswer(e.target.value)}
                 placeholder="Write your answer..."
               />
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-xs text-fg-subtle">
-                  You&apos;ll earn {formatPrice(question.expertEarnings)} for this answer.
-                </p>
+
+              {relevantKnowledge.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-xs font-medium text-fg-muted">
+                    Cite your knowledge (optional)
+                  </p>
+                  <div className="mt-2 flex flex-col gap-1.5">
+                    {relevantKnowledge.map((k) => (
+                      <label
+                        key={k.id}
+                        className="flex items-center gap-2 text-sm text-fg-muted"
+                      >
+                        <Checkbox
+                          checked={sourceIds.includes(k.id)}
+                          onChange={() => toggleSource(k.id)}
+                        />
+                        {k.title}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <label className="mt-4 flex items-center gap-2 text-sm text-fg-muted">
+                <Checkbox
+                  checked={anonymous}
+                  onChange={(e) => setAnonymous(e.target.checked)}
+                />
+                Answer anonymously — shown publicly as &ldquo;Verified Expert&rdquo;
+              </label>
+
+              <div className="mt-4 flex items-center justify-end">
                 <Button onClick={handleSend} disabled={answer.trim().length < 10}>
                   <Send className="size-4" /> Send answer
                 </Button>

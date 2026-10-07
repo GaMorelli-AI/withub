@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { MessageSquareText, TrendingUp, BadgeCheck } from "lucide-react";
+import { MessageSquareText, TrendingUp, BadgeCheck, Users } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { buttonVariants } from "@/components/ui/Button";
 import { Rating } from "@/components/Rating";
-import { PriceBadge } from "@/components/PriceBadge";
+import { formatCompactNumber } from "@/lib/format";
 import type { Expert } from "@/lib/types";
 import { cn } from "@/lib/cn";
 
@@ -58,7 +58,10 @@ export function ExpertCard({ expert }: { expert: Expert }) {
       </Link>
 
       <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-        <PriceBadge price={expert.pricePerQuestion} />
+        <span className="inline-flex items-center gap-1.5 text-xs text-fg-muted">
+          <Users className="size-3.5" />
+          {formatCompactNumber(expert.followersCount)} followers
+        </span>
         <Link
           href={`/expert/${expert.id}`}
           className={cn(buttonVariants("secondary", "sm"))}

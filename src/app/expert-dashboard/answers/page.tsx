@@ -10,7 +10,7 @@ export default function ExpertAnswersPage() {
   const questions = useAppStore((s) => s.questions);
 
   const answered = questions
-    .filter((q) => q.expertId === session?.id && q.status === "answered")
+    .filter((q) => q.answer?.authorExpertId === session?.id)
     .sort((a, b) => (a.answer!.createdAt < b.answer!.createdAt ? 1 : -1));
 
   return (

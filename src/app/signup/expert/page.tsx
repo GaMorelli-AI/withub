@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, BadgeCheck, Camera, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, BadgeCheck, Camera, Check, Image as ImageIcon } from "lucide-react";
+import { LinkedinIcon } from "@/components/icons/SocialIcons";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -11,21 +12,12 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { StepIndicator } from "@/components/ui/StepIndicator";
 import { Avatar } from "@/components/ui/Avatar";
-import { Rating } from "@/components/Rating";
 import { categories } from "@/data/categories";
 import { useAppStore } from "@/lib/store";
 import { useToast } from "@/components/ui/Toast";
-import { formatPrice } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
-const STEPS = [
-  "Personal",
-  "Professional",
-  "Expertise",
-  "Pricing",
-  "Profile",
-  "Review",
-];
+const STEPS = ["Personal", "Professional", "Expertise", "Profile", "Review"];
 
 const COUNTRIES = [
   "United States",
@@ -40,7 +32,6 @@ const COUNTRIES = [
 ];
 
 const LANGUAGES = ["English", "Portuguese", "Spanish", "German", "French", "Hindi", "Arabic", "Swedish"];
-const PRICE_PRESETS = [10, 25, 50];
 
 export default function SignupExpertPage() {
   const router = useRouter();
@@ -59,14 +50,11 @@ export default function SignupExpertPage() {
   const [bio, setBio] = useState("");
   const [linkedin, setLinkedin] = useState("");
   const [website, setWebsite] = useState("");
+  const [otherSocialUrl, setOtherSocialUrl] = useState("");
 
   const [categorySlugs, setCategorySlugs] = useState<string[]>([]);
   const [topicInput, setTopicInput] = useState("");
   const [topics, setTopics] = useState<string[]>([]);
-
-  const [price, setPrice] = useState(25);
-  const [customPrice, setCustomPrice] = useState("");
-  const [usingCustom, setUsingCustom] = useState(false);
 
   const [headline, setHeadline] = useState("");
   const [profileBio, setProfileBio] = useState("");
@@ -89,13 +77,10 @@ export default function SignupExpertPage() {
     setTopicInput("");
   }
 
-  const finalPrice = usingCustom ? Number(customPrice) || 0 : price;
-
   const canContinue = [
     name.trim() && email.trim(),
-    jobTitle.trim(),
+    jobTitle.trim() && linkedin.trim(),
     categorySlugs.length > 0,
-    finalPrice > 0,
     headline.trim() && profileBio.trim(),
     true,
   ][step];
@@ -121,7 +106,9 @@ export default function SignupExpertPage() {
       experience: bio.trim() || "New on WitHub.",
       categorySlugs,
       tags: topics.length ? topics : categorySlugs.map((s) => s),
-      pricePerQuestion: finalPrice,
+      linkedinUrl: linkedin.trim() || undefined,
+      website: website.trim() || undefined,
+      otherSocialUrl: otherSocialUrl.trim() || undefined,
       rating: 5,
       answersCount: 0,
       followersCount: 0,
@@ -141,7 +128,7 @@ export default function SignupExpertPage() {
         Become an Expert
       </h1>
       <p className="mt-1 text-sm text-fg-muted">
-        Six quick steps to start monetizing your knowledge.
+        A few steps to start turning your knowledge into an asset.
       </p>
 
       <StepIndicator steps={STEPS} current={step} className="mt-6" />
@@ -186,12 +173,26 @@ export default function SignupExpertPage() {
             <Field label="Professional bio / experience">
               <Textarea rows={4} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Summarize your experience and credentials." />
             </Field>
+            <Field label="LinkedIn URL">
+              <div className="relative">
+                <LinkedinIcon className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-fg-subtle" />
+                <Input
+                  className="pl-10"
+                  value={linkedin}
+                  onChange={(e) => setLinkedin(e.target.value)}
+                  placeholder="linkedin.com/in/you"
+                />
+              </div>
+              <p className="mt-1 text-xs text-fg-subtle">
+                Your LinkedIn is a key trust signal on your public profile.
+              </p>
+            </Field>
             <div className="grid grid-cols-2 gap-4">
-              <Field label="LinkedIn (optional)">
-                <Input value={linkedin} onChange={(e) => setLinkedin(e.target.value)} placeholder="linkedin.com/in/you" />
-              </Field>
               <Field label="Website (optional)">
                 <Input value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="yoursite.com" />
+              </Field>
+              <Field label="Other social (optional)">
+                <Input value={otherSocialUrl} onChange={(e) => setOtherSocialUrl(e.target.value)} placeholder="instagram.com/you" />
               </Field>
             </div>
           </div>
@@ -201,7 +202,7 @@ export default function SignupExpertPage() {
           <div className="flex flex-col gap-5">
             <div>
               <label className="mb-2 block text-xs font-medium text-fg-muted">
-                Categories you can answer in
+                Domains you can answer in
               </label>
               <div className="flex flex-wrap gap-2">
                 {categories.map((c) => (
@@ -219,7 +220,12 @@ export default function SignupExpertPage() {
                 <Input
                   value={topicInput}
                   onChange={(e) => setTopicInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTopic())}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addTopic();
+                    }
+                  }}
                   placeholder="e.g. Growth Marketing"
                 />
                 <Button type="button" variant="secondary" onClick={addTopic}>Add</Button>
@@ -236,58 +242,6 @@ export default function SignupExpertPage() {
         )}
 
         {step === 3 && (
-          <div>
-            <label className="mb-3 block text-xs font-medium text-fg-muted">
-              Price per question
-            </label>
-            <div className="grid grid-cols-4 gap-2.5">
-              {PRICE_PRESETS.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => { setPrice(p); setUsingCustom(false); }}
-                  className={cn(
-                    "rounded-xl border py-3 text-center font-display text-lg font-semibold transition-colors",
-                    !usingCustom && price === p
-                      ? "border-brand bg-brand/10 text-brand"
-                      : "border-border text-fg-muted hover:border-border-hover"
-                  )}
-                >
-                  ${p}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setUsingCustom(true)}
-                className={cn(
-                  "rounded-xl border py-3 text-center text-sm font-medium transition-colors",
-                  usingCustom
-                    ? "border-brand bg-brand/10 text-brand"
-                    : "border-border text-fg-muted hover:border-border-hover"
-                )}
-              >
-                Custom
-              </button>
-            </div>
-            {usingCustom && (
-              <div className="mt-3 max-w-[160px]">
-                <Input
-                  type="number"
-                  min={1}
-                  value={customPrice}
-                  onChange={(e) => setCustomPrice(e.target.value)}
-                  placeholder="$ amount"
-                />
-              </div>
-            )}
-            <p className="mt-4 text-xs text-fg-subtle">
-              WitHub keeps a 20% platform fee. You&apos;d receive{" "}
-              <span className="text-fg">{formatPrice(Math.round(finalPrice * 0.8))}</span> per question at this price.
-            </p>
-          </div>
-        )}
-
-        {step === 4 && (
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
               <Avatar name={name || "New Expert"} size="xl" />
@@ -299,6 +253,13 @@ export default function SignupExpertPage() {
                 <Camera className="size-4" /> Upload photo
               </button>
             </div>
+            <button
+              type="button"
+              onClick={() => toast("Cover upload will be available soon.", "info")}
+              className="flex h-20 items-center justify-center gap-2 rounded-xl border border-dashed border-border text-xs font-medium text-fg-muted hover:border-border-hover"
+            >
+              <ImageIcon className="size-4" /> Upload cover image
+            </button>
             <Field label="Headline">
               <Input value={headline} onChange={(e) => setHeadline(e.target.value)} placeholder="e.g. Growth & Marketing Expert" />
             </Field>
@@ -308,7 +269,7 @@ export default function SignupExpertPage() {
           </div>
         )}
 
-        {step === 5 && (
+        {step === 4 && (
           <div>
             <Card className="p-5">
               <div className="flex items-start gap-3">
@@ -321,6 +282,11 @@ export default function SignupExpertPage() {
                   </div>
                   <p className="truncate text-sm text-fg-muted">{headline || "Your headline"}</p>
                   {company && <p className="truncate text-xs text-fg-subtle">{company}</p>}
+                  {linkedin && (
+                    <p className="mt-1 flex items-center gap-1 truncate text-xs text-brand">
+                      <LinkedinIcon className="size-3" /> {linkedin}
+                    </p>
+                  )}
                 </div>
               </div>
               <p className="mt-3 text-sm text-fg-muted">{profileBio || "Your bio will appear here."}</p>
@@ -328,12 +294,6 @@ export default function SignupExpertPage() {
                 {(topics.length ? topics : categorySlugs).slice(0, 4).map((t) => (
                   <Badge key={t} variant="outline">{t}</Badge>
                 ))}
-              </div>
-              <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
-                <Rating value={5} />
-                <span className="font-display font-semibold text-gradient-brand">
-                  {formatPrice(finalPrice)} / question
-                </span>
               </div>
             </Card>
             <div className="mt-4 flex items-center gap-2 rounded-xl border border-warning/25 bg-warning/10 px-4 py-3 text-sm text-warning">

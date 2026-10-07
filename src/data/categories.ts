@@ -231,6 +231,20 @@ export const categories: Category[] = [
       "Relationships",
     ],
   },
+  {
+    id: "cat-entertainment",
+    slug: "entertainment",
+    name: "Entertainment",
+    icon: "Clapperboard",
+    description: "Film, streaming, gaming and the business behind them.",
+    topics: [
+      "Streaming",
+      "Gaming",
+      "Film & TV",
+      "Creator Economy",
+      "Music Industry",
+    ],
+  },
 ];
 
 export function getCategoryBySlug(slug: string): Category | undefined {

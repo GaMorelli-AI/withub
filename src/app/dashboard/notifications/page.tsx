@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, CheckCheck, MessageSquareText, UserPlus, Info } from "lucide-react";
+import { Bell, CheckCheck, MessageSquareText, UserPlus, Info, Users2, BarChart3 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
@@ -11,7 +11,9 @@ import type { NotificationType } from "@/lib/types";
 
 const ICONS: Record<NotificationType, typeof Bell> = {
   answer: MessageSquareText,
+  cluster_answer: Users2,
   follower: UserPlus,
+  poll_result: BarChart3,
   reminder: Bell,
   system: Info,
 };

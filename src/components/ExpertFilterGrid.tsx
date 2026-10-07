@@ -8,13 +8,6 @@ import { Select } from "@/components/ui/Select";
 import { Checkbox } from "@/components/ui/Checkbox";
 import type { Expert } from "@/lib/types";
 
-const PRICE_OPTIONS = [
-  { value: "any", label: "Any price" },
-  { value: "0-15", label: "$0 – $15" },
-  { value: "15-25", label: "$15 – $25" },
-  { value: "25-plus", label: "$25+" },
-];
-
 const RATING_OPTIONS = [
   { value: "any", label: "Any rating" },
   { value: "4.5", label: "4.5+" },
@@ -27,11 +20,17 @@ const ANSWERS_OPTIONS = [
   { value: "300", label: "300+ answers" },
 ];
 
+const FOLLOWERS_OPTIONS = [
+  { value: "any", label: "Any following" },
+  { value: "500", label: "500+ followers" },
+  { value: "1500", label: "1,500+ followers" },
+];
+
 export function ExpertFilterGrid({ experts }: { experts: Expert[] }) {
-  const [price, setPrice] = useState("any");
   const [rating, setRating] = useState("any");
   const [language, setLanguage] = useState("any");
   const [minAnswers, setMinAnswers] = useState("any");
+  const [minFollowers, setMinFollowers] = useState("any");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   const languages = useMemo(
@@ -40,13 +39,10 @@ export function ExpertFilterGrid({ experts }: { experts: Expert[] }) {
   );
 
   const filtered = experts.filter((e) => {
-    if (price === "0-15" && !(e.pricePerQuestion <= 15)) return false;
-    if (price === "15-25" && !(e.pricePerQuestion > 15 && e.pricePerQuestion <= 25))
-      return false;
-    if (price === "25-plus" && !(e.pricePerQuestion > 25)) return false;
     if (rating !== "any" && e.rating < Number(rating)) return false;
     if (language !== "any" && !e.languages.includes(language)) return false;
     if (minAnswers !== "any" && e.answersCount < Number(minAnswers)) return false;
+    if (minFollowers !== "any" && e.followersCount < Number(minFollowers)) return false;
     if (verifiedOnly && e.verification !== "verified") return false;
     return true;
   });
@@ -57,17 +53,6 @@ export function ExpertFilterGrid({ experts }: { experts: Expert[] }) {
         <span className="flex items-center gap-1.5 text-xs font-medium text-fg-subtle">
           <SlidersHorizontal className="size-3.5" /> Filters
         </span>
-        <Select
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          className="w-auto min-w-[130px]"
-        >
-          {PRICE_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </Select>
         <Select
           value={rating}
           onChange={(e) => setRating(e.target.value)}
@@ -102,6 +87,17 @@ export function ExpertFilterGrid({ experts }: { experts: Expert[] }) {
             </option>
           ))}
         </Select>
+        <Select
+          value={minFollowers}
+          onChange={(e) => setMinFollowers(e.target.value)}
+          className="w-auto min-w-[150px]"
+        >
+          {FOLLOWERS_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </Select>
         <label className="flex items-center gap-2 text-sm text-fg-muted">
           <Checkbox
             checked={verifiedOnly}
@@ -122,7 +118,7 @@ export function ExpertFilterGrid({ experts }: { experts: Expert[] }) {
           className="mt-6"
           icon={SlidersHorizontal}
           title="No experts match these filters"
-          description="Try widening your price range or clearing a filter."
+          description="Try widening a filter or clearing them."
         />
       )}
     </div>

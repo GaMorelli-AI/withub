@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   BadgeCheck,
+  BookOpen,
+  Globe,
   Link2,
   Lock,
   MessageSquareText,
@@ -22,7 +24,8 @@ import { Button } from "@/components/ui/Button";
 import { FacebookIcon, InstagramIcon, TikTokIcon } from "@/components/icons/SocialIcons";
 import { useAppStore } from "@/lib/store";
 import { useToast } from "@/components/ui/Toast";
-import { formatCompactNumber, formatPrice } from "@/lib/format";
+import { getExpertAnalytics } from "@/lib/stats";
+import { formatCompactNumber } from "@/lib/format";
 import { cn } from "@/lib/cn";
 
 const SOCIAL_LINKS = [
@@ -36,17 +39,18 @@ export default function ExpertProfilePage() {
   const session = useAppStore((s) => s.session);
   const experts = useAppStore((s) => s.experts);
   const questions = useAppStore((s) => s.questions);
-  const earningsTx = useAppStore((s) => s.earningsTx);
   const updateExpert = useAppStore((s) => s.updateExpert);
 
   const expert = experts.find((e) => e.id === session?.id);
   const [editing, setEditing] = useState(false);
   const [headline, setHeadline] = useState(expert?.headline ?? "");
   const [bio, setBio] = useState(expert?.bio ?? "");
-  const [price, setPrice] = useState(expert?.pricePerQuestion ?? 20);
+  const [linkedinUrl, setLinkedinUrl] = useState(expert?.linkedinUrl ?? "");
+  const [website, setWebsite] = useState(expert?.website ?? "");
 
   if (!expert) return null;
 
+  const analytics = getExpertAnalytics(expert.id, questions);
   const myQuestions = questions.filter((q) => q.expertId === expert.id);
   const publicAnswers = myQuestions.filter(
     (q) => q.status === "answered" && q.privacy === "public"
@@ -54,18 +58,13 @@ export default function ExpertProfilePage() {
   const privateAnswers = myQuestions.filter(
     (q) => q.status === "answered" && q.privacy === "private"
   ).length;
-  const revenueConfirmed = earningsTx
-    .filter((t) => t.expertId === expert.id && t.status === "paid")
-    .reduce((sum, t) => sum + t.amount, 0);
-  const revenueUnrealized = myQuestions
-    .filter((q) => q.status === "waiting")
-    .reduce((sum, q) => sum + q.expertEarnings, 0);
 
   function handleSave() {
     updateExpert(expert!.id, {
       headline: headline.trim() || expert!.headline,
       bio: bio.trim() || expert!.bio,
-      pricePerQuestion: price,
+      linkedinUrl: linkedinUrl.trim() || undefined,
+      website: website.trim() || undefined,
     });
     setEditing(false);
     toast("Profile updated.");
@@ -149,45 +148,61 @@ export default function ExpertProfilePage() {
             <p className="mt-4 text-sm text-fg-muted">{expert.bio}</p>
           )}
 
-          <div className="mt-4 flex items-center gap-2 text-sm">
-            <span className="text-fg-muted">Price per question:</span>
-            {editing ? (
-              <Input
-                type="number"
-                min={1}
-                value={price}
-                onChange={(e) => setPrice(Number(e.target.value))}
-                className="h-8 w-24"
-              />
-            ) : (
-              <span className="font-display font-semibold text-gradient-brand">
-                {formatPrice(expert.pricePerQuestion)}
-              </span>
-            )}
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-fg-muted">LinkedIn</label>
+              {editing ? (
+                <Input
+                  value={linkedinUrl}
+                  onChange={(e) => setLinkedinUrl(e.target.value)}
+                  placeholder="linkedin.com/in/you"
+                />
+              ) : expert.linkedinUrl ? (
+                <a
+                  href={expert.linkedinUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm text-brand hover:underline"
+                >
+                  {expert.linkedinUrl.replace("https://", "")}
+                </a>
+              ) : (
+                <p className="text-sm text-fg-subtle">Not added</p>
+              )}
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-fg-muted">Website</label>
+              {editing ? (
+                <Input
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="yoursite.com"
+                />
+              ) : expert.website ? (
+                <a
+                  href={expert.website}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-sm text-brand hover:underline"
+                >
+                  <Globe className="size-3.5" /> {expert.website.replace("https://", "")}
+                </a>
+              ) : (
+                <p className="text-sm text-fg-subtle">Not added</p>
+              )}
+            </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-3 gap-3">
-            <StatBox
-              icon={MessageSquareText}
-              value={`${publicAnswers}`}
-              label="Public answers"
-            />
-            <StatBox
-              icon={Lock}
-              value={`${privateAnswers}`}
-              label="Private answers"
-            />
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatBox icon={BookOpen} value={`${analytics.knowledgeCount}`} label="Knowledge" />
+            <StatBox icon={MessageSquareText} value={`${publicAnswers}`} label="Public answers" />
+            <StatBox icon={Lock} value={`${privateAnswers}`} label="Private answers" />
             <StatBox
               icon={TrendingUp}
               value={`${expert.responseRate}%`}
               label="Answer rate"
               tone="positive"
             />
-          </div>
-
-          <div className="mt-3 flex flex-col gap-2.5">
-            <RevenueRow label="Revenue confirmed" value={formatPrice(revenueConfirmed)} tone="positive" />
-            <RevenueRow label="Revenue unrealized" value={formatPrice(revenueUnrealized)} tone="warning" />
           </div>
 
           <div className="mt-6">
@@ -256,30 +271,6 @@ function StatBox({
         {value}
       </p>
       <p className="mt-0.5 text-xs text-fg-subtle">{label}</p>
-    </div>
-  );
-}
-
-function RevenueRow({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: string;
-  tone: "positive" | "warning";
-}) {
-  return (
-    <div className="flex items-center justify-between rounded-xl border border-border bg-bg-elevated px-4 py-3">
-      <span className="text-sm text-fg-muted">{label}</span>
-      <span
-        className={cn(
-          "font-display text-sm font-semibold",
-          tone === "positive" ? "text-positive" : "text-warning"
-        )}
-      >
-        {value}
-      </span>
     </div>
   );
 }

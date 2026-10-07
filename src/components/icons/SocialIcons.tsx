@@ -35,6 +35,25 @@ export function FacebookIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function LinkedinIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <rect x="3" y="3" width="18" height="18" rx="4" />
+      <line x1="7.5" y1="10" x2="7.5" y2="16.5" />
+      <circle cx="7.5" cy="7" r="0.6" fill="currentColor" stroke="none" />
+      <path d="M11.5 16.5V10M11.5 12.7c0-1.5 1-2.7 2.5-2.7s2.5 1.2 2.5 2.7v3.8" />
+    </svg>
+  );
+}
+
 export function TikTokIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg

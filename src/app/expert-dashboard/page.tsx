@@ -1,29 +1,39 @@
 "use client";
 
 import Link from "next/link";
-import { Inbox, MessageSquareText, Star, TrendingUp, Wallet } from "lucide-react";
+import { BookOpen, Inbox, Star, TrendingUp, Users } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { MyQuestionRow } from "@/components/MyQuestionRow";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useAppStore } from "@/lib/store";
-import { formatPrice } from "@/lib/format";
+import { getExpertAnalytics } from "@/lib/stats";
+import { formatCompactNumber } from "@/lib/format";
 
 export default function ExpertDashboardPage() {
   const session = useAppStore((s) => s.session);
   const experts = useAppStore((s) => s.experts);
   const questions = useAppStore((s) => s.questions);
-  const earningsTx = useAppStore((s) => s.earningsTx);
 
   const expert = experts.find((e) => e.id === session?.id);
-  const myQuestions = questions.filter((q) => q.expertId === session?.id);
-  const waiting = myQuestions
-    .filter((q) => q.status === "waiting")
-    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  const totalEarnings = earningsTx
-    .filter((t) => t.expertId === session?.id)
-    .reduce((sum, t) => sum + t.amount, 0);
 
   if (!expert) return null;
+
+  const analytics = getExpertAnalytics(expert.id, questions);
+
+  const directed = questions.filter(
+    (q) => q.expertId === expert.id && q.status === "waiting"
+  );
+  const domainGeneral = questions.filter(
+    (q) =>
+      q.target === "general" &&
+      q.status === "waiting" &&
+      !q.clusterOf &&
+      !q.expertId &&
+      expert.categorySlugs.includes(q.categorySlug)
+  );
+  const waiting = [...directed, ...domainGeneral].sort((a, b) =>
+    a.createdAt < b.createdAt ? 1 : -1
+  );
 
   return (
     <div>
@@ -31,12 +41,12 @@ export default function ExpertDashboardPage() {
         Welcome back, {expert.name.split(" ")[0]}
       </h1>
       <p className="mt-1 text-sm text-fg-muted">
-        Here&apos;s how your expertise is performing.
+        Here&apos;s how your knowledge is performing.
       </p>
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard icon={Wallet} label="Earnings" value={formatPrice(totalEarnings)} accent />
-        <StatCard icon={MessageSquareText} label="Questions" value={`${expert.answersCount}`} />
+        <StatCard icon={BookOpen} label="Knowledge Items" value={`${analytics.knowledgeCount}`} accent />
+        <StatCard icon={Users} label="Followers" value={formatCompactNumber(expert.followersCount)} />
         <StatCard icon={TrendingUp} label="Response Rate" value={`${expert.responseRate}%`} />
         <StatCard icon={Star} label="Rating" value={expert.rating.toFixed(1)} />
       </div>

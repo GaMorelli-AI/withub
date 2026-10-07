@@ -21,9 +21,56 @@
   --color-danger: #f87171;
 
   --gradient-brand: linear-gradient(135deg, #2ee6d6 0%, #3e7bfa 100%);
+
+  /* "Chrome" tokens power the navbar/sidebar shell, which stays dark in both
+     themes — it's the one place the new logo (white wordmark) must sit on a
+     dark background, and it keeps the brand's dark-first identity anchored
+     even when the page canvas switches to light. */
+  --color-chrome-bg: #05070a;
+  --color-chrome-elevated: #0b0e13;
+  --color-chrome-surface-hover: #141922;
+  --color-chrome-border: rgba(255, 255, 255, 0.08);
+  --color-chrome-fg: #f2f5f7;
+  --color-chrome-fg-muted: #8a93a3;
+  --color-chrome-fg-subtle: #5b6472;
+
+  color-scheme: dark;
 }
 
-@theme inline {
+:root[data-theme="light"] {
+  --color-bg: #f6f8fa;
+  --color-bg-elevated: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-hover: #eef1f5;
+  --color-border: rgba(15, 23, 42, 0.09);
+  --color-border-hover: rgba(15, 23, 42, 0.18);
+  --color-fg: #0e1420;
+  --color-fg-muted: #4a5568;
+  --color-fg-subtle: #8792a2;
+
+  --color-brand: #0d9488;
+  --color-brand-dim: #0b7d73;
+  --color-brand-secondary: #2563eb;
+  --color-brand-secondary-dim: #1d4ed8;
+
+  --color-positive: #059669;
+  --color-warning: #b45309;
+  --color-danger: #dc2626;
+
+  --gradient-brand: linear-gradient(135deg, #0d9488 0%, #2563eb 100%);
+
+  color-scheme: light;
+}
+
+/*
+ * Deliberately NOT `@theme inline`: inline theme values get their final
+ * value substituted into every generated utility at build time, which would
+ * bake in the :root (dark) color forever and break runtime light/dark
+ * switching via the [data-theme="light"] attribute. Plain `@theme` keeps
+ * `var(--color-bg)` etc. as a live reference in the compiled utilities, so
+ * the cascade re-resolves it whenever the attribute changes.
+ */
+@theme {
   --color-bg: var(--color-bg);
   --color-bg-elevated: var(--color-bg-elevated);
   --color-surface: var(--color-surface);
@@ -34,6 +81,14 @@
   --color-fg-muted: var(--color-fg-muted);
   --color-fg-subtle: var(--color-fg-subtle);
 
+  --color-chrome-bg: var(--color-chrome-bg);
+  --color-chrome-elevated: var(--color-chrome-elevated);
+  --color-chrome-surface-hover: var(--color-chrome-surface-hover);
+  --color-chrome-border: var(--color-chrome-border);
+  --color-chrome-fg: var(--color-chrome-fg);
+  --color-chrome-fg-muted: var(--color-chrome-fg-muted);
+  --color-chrome-fg-subtle: var(--color-chrome-fg-subtle);
+
   --color-brand: var(--color-brand);
   --color-brand-dim: var(--color-brand-dim);
   --color-brand-secondary: var(--color-brand-secondary);
@@ -42,7 +97,12 @@
   --color-positive: var(--color-positive);
   --color-warning: var(--color-warning);
   --color-danger: var(--color-danger);
+}
 
+/* `inline` is still correct (and needed) here: next/font's variables are
+   scoped to a className on <html>, not truly global, so Tailwind has to
+   inline-resolve them relative to that context. */
+@theme inline {
   --font-sans: var(--font-inter);
   --font-display: var(--font-space-grotesk);
 
@@ -77,11 +137,11 @@ body {
 
 ::selection {
   background: var(--color-brand);
-  color: #04110f;
+  color: var(--color-bg);
 }
 
 * {
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scrollbar-color: color-mix(in srgb, var(--color-fg) 15%, transparent) transparent;
   scrollbar-width: thin;
 }
 ::-webkit-scrollbar {
@@ -92,13 +152,13 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: color-mix(in srgb, var(--color-fg) 12%, transparent);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: color-mix(in srgb, var(--color-fg) 20%, transparent);
   background-clip: padding-box;
 }
 

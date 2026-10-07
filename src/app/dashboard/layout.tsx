@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Bookmark, Compass, Home, MessageSquareText, User } from "lucide-react";
+import { Bell, Compass, Home, MessageSquareText, User, UserPlus } from "lucide-react";
 import { AuthGuard } from "@/components/AuthGuard";
 import { Sidebar } from "@/components/Sidebar";
 
@@ -8,7 +8,7 @@ const ITEMS = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/categories", label: "Explore", icon: Compass },
   { href: "/dashboard/questions", label: "My Questions", icon: MessageSquareText },
-  { href: "/dashboard/experts", label: "Saved Experts", icon: Bookmark },
+  { href: "/dashboard/experts", label: "Following", icon: UserPlus },
   { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
   { href: "/dashboard/profile", label: "Profile", icon: User },
 ];

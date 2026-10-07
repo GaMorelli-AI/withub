@@ -1,12 +1,14 @@
 import Link from "next/link";
-import { ArrowRight, Rocket, Library, Wallet } from "lucide-react";
-import { SearchBar } from "@/components/SearchBar";
+import { ArrowRight, BookOpen, MessagesSquare, Vote } from "lucide-react";
+import { VisitorAskWidget } from "@/components/VisitorAskWidget";
 import { ExpertCard } from "@/components/ExpertCard";
 import { CategoryCard } from "@/components/CategoryCard";
+import { PollCard } from "@/components/PollCard";
 import { buttonVariants } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { experts } from "@/data/experts";
 import { categories } from "@/data/categories";
+import { polls } from "@/data/polls";
 import { cn } from "@/lib/cn";
 
 const FEATURED_EXPERT_IDS = [
@@ -20,27 +22,29 @@ const FEATURED_EXPERT_IDS = [
   "exp-thiago-nunes",
 ];
 
+const TRENDING_POLL_IDS = ["poll-001", "poll-003", "poll-004", "poll-006"];
+
 const HOW_IT_WORKS = [
   {
     step: "01",
-    icon: Library,
-    title: "Find the right expert",
+    icon: MessagesSquare,
+    title: "Ask anything",
     description:
-      "Search by topic or browse categories to find someone who has actually done the thing you're trying to figure out.",
+      "Ask the whole community or a specific expert — no scheduling, no wasted calls. Try it before you even create an account.",
   },
   {
     step: "02",
-    icon: Rocket,
-    title: "Ask your question",
+    icon: BookOpen,
+    title: "Get an answer from real knowledge",
     description:
-      "Add context, choose public or private, and send it — no back and forth scheduling, no wasted calls.",
+      "WitHub searches existing answers and expert knowledge first, and routes anything new to the right experts.",
   },
   {
     step: "03",
-    icon: Wallet,
-    title: "Get a real answer",
+    icon: Vote,
+    title: "See what people really think",
     description:
-      "Your expert answers directly. You pay only for the question you asked, and can follow up any time.",
+      "Vote in polls and compare Expert Signal against Community Pulse on the questions everyone's asking.",
   },
 ];
 
@@ -48,6 +52,10 @@ export default function HomePage() {
   const featured = FEATURED_EXPERT_IDS.map((id) =>
     experts.find((e) => e.id === id)
   ).filter((e): e is NonNullable<typeof e> => Boolean(e));
+
+  const trendingPolls = TRENDING_POLL_IDS.map((id) =>
+    polls.find((p) => p.id === id)
+  ).filter((p): p is NonNullable<typeof p> => Boolean(p));
 
   return (
     <>
@@ -60,20 +68,13 @@ export default function HomePage() {
             Ask people who actually know.
           </p>
           <p className="mx-auto mt-4 max-w-xl text-sm text-fg-subtle sm:text-base">
-            Connect with experts, ask questions and get answers from people
-            with real experience.
+            A searchable network of human knowledge — ask the community, ask
+            an expert, or see what both really think.
           </p>
 
-          <div className="mx-auto mt-10 max-w-2xl">
-            <SearchBar variant="hero" />
+          <div className="mx-auto mt-10">
+            <VisitorAskWidget />
           </div>
-
-          <Link
-            href="/ask"
-            className={cn(buttonVariants("primary", "lg"), "mt-8")}
-          >
-            Ask an Expert <ArrowRight className="size-4" />
-          </Link>
         </div>
       </section>
 
@@ -81,118 +82,144 @@ export default function HomePage() {
         <div className="flex items-end justify-between">
           <div>
             <h2 className="font-display text-2xl font-semibold text-fg sm:text-3xl">
-              Learn from people who know.
+              Trending on WitHub
             </h2>
             <p className="mt-2 text-sm text-fg-muted">
-              Verified experts across business, tech, health, law and more.
+              What experts think, versus what the community thinks.
             </p>
           </div>
           <Link
-            href="/experts"
+            href="/polls"
             className="hidden shrink-0 items-center gap-1 text-sm font-medium text-brand hover:underline sm:flex"
           >
-            View all experts <ArrowRight className="size-3.5" />
+            View all polls <ArrowRight className="size-3.5" />
           </Link>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {featured.map((expert) => (
-            <ExpertCard key={expert.id} expert={expert} />
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {trendingPolls.map((poll) => (
+            <PollCard key={poll.id} poll={poll} />
           ))}
         </div>
-
-        <Link
-          href="/experts"
-          className={cn(buttonVariants("secondary", "md"), "mt-6 flex w-fit sm:hidden")}
-        >
-          View all experts
-        </Link>
       </section>
 
       <section className="border-t border-border bg-bg-elevated">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
-          <h2 className="font-display text-2xl font-semibold text-fg sm:text-3xl">
-            Explore knowledge
-          </h2>
-          <p className="mt-2 text-sm text-fg-muted">
-            Sixteen categories, hundreds of specific topics.
-          </p>
+          <div className="flex items-end justify-between">
+            <div>
+              <h2 className="font-display text-2xl font-semibold text-fg sm:text-3xl">
+                Learn from people who know.
+              </h2>
+              <p className="mt-2 text-sm text-fg-muted">
+                Verified experts across business, tech, health, law and more.
+              </p>
+            </div>
+            <Link
+              href="/experts"
+              className="hidden shrink-0 items-center gap-1 text-sm font-medium text-brand hover:underline sm:flex"
+            >
+              View all experts <ArrowRight className="size-3.5" />
+            </Link>
+          </div>
 
-          <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {categories.map((category) => (
-              <CategoryCard key={category.id} category={category} />
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {featured.map((expert) => (
+              <ExpertCard key={expert.id} expert={expert} />
             ))}
+          </div>
+
+          <Link
+            href="/experts"
+            className={cn(buttonVariants("secondary", "md"), "mt-6 flex w-fit sm:hidden")}
+          >
+            View all experts
+          </Link>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
+        <h2 className="font-display text-2xl font-semibold text-fg sm:text-3xl">
+          Explore knowledge
+        </h2>
+        <p className="mt-2 text-sm text-fg-muted">
+          {categories.length} categories, hundreds of specific topics.
+        </p>
+
+        <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+          {categories.map((category) => (
+            <CategoryCard key={category.id} category={category} />
+          ))}
+        </div>
+      </section>
+
+      <section className="border-t border-border bg-bg-elevated">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-center">
+            <div>
+              <h2 className="font-display text-2xl font-semibold text-fg sm:text-3xl">
+                Be an expert
+              </h2>
+              <p className="mt-3 max-w-md text-sm text-fg-muted">
+                Join WitHub and turn your knowledge into a searchable asset —
+                answer questions, publish knowledge, and grow a following in
+                your domain.
+              </p>
+              <Link
+                href="/signup/expert"
+                className={cn(buttonVariants("primary", "md"), "mt-6")}
+              >
+                Become an Expert
+              </Link>
+            </div>
+
+            <Card className="p-6 sm:p-8">
+              <p className="font-display text-lg leading-snug text-fg">
+                &ldquo;WitHub turned the answers I was already giving people
+                into something that keeps growing my audience.&rdquo;
+              </p>
+              <p className="mt-3 text-sm text-fg-muted">
+                Sarah Mason &middot; Growth & Marketing Expert
+              </p>
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-border bg-bg-elevated p-4">
+                  <p className="text-xs text-fg-subtle">Knowledge items</p>
+                  <p className="mt-1 font-display text-xl font-semibold text-gradient-brand">
+                    3
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border bg-bg-elevated p-4">
+                  <p className="text-xs text-fg-subtle">Follower growth</p>
+                  <p className="mt-1 font-display text-xl font-semibold text-gradient-brand">
+                    45%
+                  </p>
+                </div>
+              </div>
+            </Card>
           </div>
         </div>
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-center">
-          <div>
-            <h2 className="font-display text-2xl font-semibold text-fg sm:text-3xl">
-              Be an expert
-            </h2>
-            <p className="mt-3 max-w-md text-sm text-fg-muted">
-              Join WitHub and use your knowledge to expand your audience and
-              make more money. Answer on your own time, at your own price.
-            </p>
-            <Link
-              href="/signup/expert"
-              className={cn(buttonVariants("primary", "md"), "mt-6")}
-            >
-              Become an Expert
-            </Link>
-          </div>
-
-          <Card className="p-6 sm:p-8">
-            <p className="font-display text-lg leading-snug text-fg">
-              &ldquo;WitHub gave me a new source of income, with minimal
-              effort.&rdquo;
-            </p>
-            <p className="mt-3 text-sm text-fg-muted">
-              Sarah Mason &middot; Growth & Marketing Expert
-            </p>
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-border bg-bg-elevated p-4">
-                <p className="text-xs text-fg-subtle">Avg. monthly income</p>
-                <p className="mt-1 font-display text-xl font-semibold text-gradient-brand">
-                  $1,245
-                </p>
-              </div>
-              <div className="rounded-xl border border-border bg-bg-elevated p-4">
-                <p className="text-xs text-fg-subtle">Avg. audience growth</p>
-                <p className="mt-1 font-display text-xl font-semibold text-gradient-brand">
-                  45%
-                </p>
-              </div>
-            </div>
-          </Card>
+        <h2 className="font-display text-2xl font-semibold text-fg sm:text-3xl">
+          How it works
+        </h2>
+        <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-3">
+          {HOW_IT_WORKS.map((item) => (
+            <Card key={item.step} className="p-6">
+              <span className="font-display text-sm text-brand">
+                {item.step}
+              </span>
+              <item.icon className="mt-3 size-6 text-fg-muted" strokeWidth={1.5} />
+              <h3 className="mt-3 font-display text-base font-semibold text-fg">
+                {item.title}
+              </h3>
+              <p className="mt-2 text-sm text-fg-muted">{item.description}</p>
+            </Card>
+          ))}
         </div>
-      </section>
-
-      <section className="border-t border-border bg-bg-elevated">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20">
-          <h2 className="font-display text-2xl font-semibold text-fg sm:text-3xl">
-            How it works
-          </h2>
-          <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {HOW_IT_WORKS.map((item) => (
-              <Card key={item.step} className="p-6">
-                <span className="font-display text-sm text-brand">
-                  {item.step}
-                </span>
-                <item.icon className="mt-3 size-6 text-fg-muted" strokeWidth={1.5} />
-                <h3 className="mt-3 font-display text-base font-semibold text-fg">
-                  {item.title}
-                </h3>
-                <p className="mt-2 text-sm text-fg-muted">{item.description}</p>
-              </Card>
-            ))}
-          </div>
-          <Link href="/how-it-works" className={cn(buttonVariants("outline", "md"), "mt-8")}>
-            Learn more about how it works
-          </Link>
-        </div>
+        <Link href="/how-it-works" className={cn(buttonVariants("outline", "md"), "mt-8")}>
+          Learn more about how it works
+        </Link>
       </section>
     </>
   );

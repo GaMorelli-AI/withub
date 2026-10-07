@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Bookmark, MessageSquareText, Pencil, Save } from "lucide-react";
+import { BarChart3, MessageSquareText, Pencil, Save, UserPlus } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Switch } from "@/components/ui/Switch";
 import { useAppStore } from "@/lib/store";
 import { getUserById } from "@/data/users";
 import { categories } from "@/data/categories";
@@ -18,6 +19,7 @@ export default function UserProfilePage() {
   const session = useAppStore((s) => s.session);
   const users = useAppStore((s) => s.users);
   const questions = useAppStore((s) => s.questions);
+  const votedPolls = useAppStore((s) => s.votedPolls);
   const updateUser = useAppStore((s) => s.updateUser);
 
   const user = session ? users.find((u) => u.id === session.id) ?? getUserById(session.id) : null;
@@ -28,7 +30,8 @@ export default function UserProfilePage() {
   if (!user) return null;
 
   const questionsAsked = questions.filter((q) => q.askerId === user.id).length;
-  const savedExperts = user.savedExpertIds.length;
+  const followingCount = user.followingExpertIds.length;
+  const pollsVoted = Object.keys(votedPolls).length;
 
   function toggleInterest(slug: string) {
     setInterests((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]));
@@ -78,17 +81,35 @@ export default function UserProfilePage() {
             </p>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-3">
+          <div className="mt-6 grid grid-cols-3 gap-3">
             <div className="rounded-xl border border-border bg-bg-elevated p-4 text-center">
               <MessageSquareText className="mx-auto size-4 text-fg-subtle" />
               <p className="mt-2 font-display text-lg font-semibold text-fg">{questionsAsked}</p>
-              <p className="mt-0.5 text-xs text-fg-subtle">Questions asked</p>
+              <p className="mt-0.5 text-xs text-fg-subtle">Questions</p>
             </div>
             <div className="rounded-xl border border-border bg-bg-elevated p-4 text-center">
-              <Bookmark className="mx-auto size-4 text-fg-subtle" />
-              <p className="mt-2 font-display text-lg font-semibold text-fg">{savedExperts}</p>
-              <p className="mt-0.5 text-xs text-fg-subtle">Saved experts</p>
+              <UserPlus className="mx-auto size-4 text-fg-subtle" />
+              <p className="mt-2 font-display text-lg font-semibold text-fg">{followingCount}</p>
+              <p className="mt-0.5 text-xs text-fg-subtle">Following</p>
             </div>
+            <div className="rounded-xl border border-border bg-bg-elevated p-4 text-center">
+              <BarChart3 className="mx-auto size-4 text-fg-subtle" />
+              <p className="mt-2 font-display text-lg font-semibold text-fg">{pollsVoted}</p>
+              <p className="mt-0.5 text-xs text-fg-subtle">Polls voted</p>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center justify-between border-t border-border pt-5">
+            <div>
+              <p className="text-sm font-medium text-fg">Private profile</p>
+              <p className="mt-0.5 text-xs text-fg-muted">
+                Hide your activity from other members.
+              </p>
+            </div>
+            <Switch
+              checked={user.privateProfile}
+              onChange={(v) => updateUser(user.id, { privateProfile: v })}
+            />
           </div>
 
           <div className="mt-6 border-t border-border pt-5">

@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 import { StepIndicator } from "@/components/ui/StepIndicator";
 import { categories } from "@/data/categories";
 import { useAppStore } from "@/lib/store";
@@ -25,6 +26,12 @@ const COUNTRIES = [
   "Other",
 ];
 
+const LANGUAGES = ["en-US", "pt-BR"] as const;
+const LANGUAGE_LABELS: Record<(typeof LANGUAGES)[number], string> = {
+  "en-US": "English (US)",
+  "pt-BR": "Português (BR)",
+};
+
 export default function SignupUserPage() {
   const router = useRouter();
   const toast = useToast();
@@ -35,12 +42,21 @@ export default function SignupUserPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [country, setCountry] = useState(COUNTRIES[0]);
+  const [language, setLanguage] = useState<(typeof LANGUAGES)[number]>("en-US");
   const [interests, setInterests] = useState<string[]>([]);
+  const [topicInput, setTopicInput] = useState("");
+  const [topics, setTopics] = useState<string[]>([]);
 
   function toggleInterest(slug: string) {
     setInterests((prev) =>
       prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]
     );
+  }
+
+  function addTopic() {
+    const t = topicInput.trim();
+    if (t && !topics.includes(t)) setTopics((prev) => [...prev, t]);
+    setTopicInput("");
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -51,8 +67,11 @@ export default function SignupUserPage() {
       name: name.trim() || "New Member",
       email,
       country,
+      language,
       interests,
-      savedExpertIds: [],
+      followingExpertIds: [],
+      subscriptionTier: "free",
+      privateProfile: false,
       joinedAt: new Date().toISOString(),
       gradientSeed: Math.floor(Math.random() * 6),
     });
@@ -99,15 +118,29 @@ export default function SignupUserPage() {
               placeholder="••••••••"
             />
           </Field>
-          <Field label="Country">
-            <Select value={country} onChange={(e) => setCountry(e.target.value)}>
-              {COUNTRIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </Select>
-          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Country">
+              <Select value={country} onChange={(e) => setCountry(e.target.value)}>
+                {COUNTRIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Language">
+              <Select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as (typeof LANGUAGES)[number])}
+              >
+                {LANGUAGES.map((l) => (
+                  <option key={l} value={l}>
+                    {LANGUAGE_LABELS[l]}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
 
           <div>
             <label className="mb-2 block text-xs font-medium text-fg-muted">
@@ -133,6 +166,37 @@ export default function SignupUserPage() {
                 );
               })}
             </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-medium text-fg-muted">
+              Specific topics (optional)
+            </label>
+            <div className="flex gap-2">
+              <Input
+                value={topicInput}
+                onChange={(e) => setTopicInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addTopic();
+                  }
+                }}
+                placeholder="e.g. Generative AI"
+              />
+              <Button type="button" variant="secondary" onClick={addTopic}>
+                Add
+              </Button>
+            </div>
+            {topics.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {topics.map((t) => (
+                  <Badge key={t} variant="brand">
+                    {t}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
 
           <Button type="submit" className="mt-2 w-full">

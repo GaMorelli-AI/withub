@@ -6,6 +6,7 @@ import { Tabs } from "@/components/ui/Tabs";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { MyQuestionRow } from "@/components/MyQuestionRow";
 import { useAppStore } from "@/lib/store";
+import { isEffectivelyAnswered } from "@/lib/question-helpers";
 
 const TABS = [
   { value: "waiting", label: "Waiting" },
@@ -23,8 +24,12 @@ export default function MyQuestionsPage() {
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 
   const grouped = {
-    waiting: myQuestions.filter((q) => q.status === "waiting" || q.status === "expired" || q.status === "declined"),
-    answered: myQuestions.filter((q) => q.status === "answered"),
+    waiting: myQuestions.filter(
+      (q) =>
+        !isEffectivelyAnswered(q, questions) &&
+        (q.status === "waiting" || q.status === "expired" || q.status === "declined")
+    ),
+    answered: myQuestions.filter((q) => isEffectivelyAnswered(q, questions)),
     archived: myQuestions.filter((q) => q.status === "archived"),
   };
 
